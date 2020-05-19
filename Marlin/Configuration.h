@@ -20,6 +20,7 @@
  *
  */
 #pragma once
+#define CR10_CNC
 
 /**
  * Configuration.h
@@ -1513,8 +1514,8 @@
 
 #if ENABLED(NOZZLE_PARK_FEATURE)
   // Specify a park position as { X, Y, Z_raise }
-  #define NOZZLE_PARK_POINT { (X_MIN_POS + 10), (Y_MAX_POS - 10), 20 }
-  //#define NOZZLE_PARK_X_ONLY          // X move only is required to park
+  #define NOZZLE_PARK_POINT { (X_MIN_POS + 10), (Y_MAX_POS - 10), 20 } 
+   //#define NOZZLE_PARK_X_ONLY          // X move only is required to park
   //#define NOZZLE_PARK_Y_ONLY          // Y move only is required to park
   #define NOZZLE_PARK_Z_RAISE_MIN   2   // (mm) Always raise Z by at least this distance
   #define NOZZLE_PARK_XY_FEEDRATE 100   // (mm/s) X and Y axes feedrate (also used for delta Z axis)
@@ -2268,7 +2269,17 @@
 // 300ms is a good value but you can try less delay.
 // If the servo can't reach the requested position, increase it.
 #define SERVO_DELAY { 300 }
-
+ #if ENABLED(CR10_CNC)
+      #define SLIM_1284P
+      #define BAUDRATE 115200
+      #define EXTRUDERS 0
+      //#define CR10_STOCKDISPLAY
+      #define TEMP_SENSOR_0 0
+      #define SLIM_LCD_MENUS
+      //#define SDSUPPORT
+      #define REPRAP_DISCOUNT_FULL_GRAPHIC_SMART_CONTROLLER
+      #define MOTHERBOARD BOARD_MELZI_CREALITY
+#endif //end CR-10
 // Only power servos during movement, otherwise leave off to prevent jitter
 //#define DEACTIVATE_SERVOS_AFTER_MOVE
 

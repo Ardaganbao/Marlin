@@ -20,7 +20,7 @@
  *
  */
 #pragma once
-
+#include "Configuration_backend_CR10CNC.h"
 /**
  * Configuration_adv.h
  *
@@ -262,7 +262,7 @@
 #endif
 
 /**
- * Automatic Temperature Mode
+  * Automatic Temperature Mode
  *
  * Dynamically adjust the hotend target temperature based on planned E moves.
  *
@@ -3309,7 +3309,7 @@
       {  10.0,  700 }, \
       { -10.0,  400 }, \
       { -50.0, 2000 }
-  #endif
+        #endif
 
   /**
    * MMU Extruder Sensor
