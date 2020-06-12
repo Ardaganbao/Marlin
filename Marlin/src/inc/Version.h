@@ -42,11 +42,7 @@
  * version was tagged.
  */
 #ifndef STRING_DISTRIBUTION_DATE
-<<<<<<< HEAD
   #define STRING_DISTRIBUTION_DATE "2020-06-12"
-=======
-  #define STRING_DISTRIBUTION_DATE "2020-05-18"
->>>>>>> parent of 816ae0c9f... Merge branch 'bugfix-2.0.x' into ArdaCNC
 #endif
 
 /**
