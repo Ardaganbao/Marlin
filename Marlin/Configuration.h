@@ -20,7 +20,7 @@
  *
  */
 #pragma once
-//#define CR10_CNC
+#define CR10_CNC
 
 /**
  * Configuration.h
