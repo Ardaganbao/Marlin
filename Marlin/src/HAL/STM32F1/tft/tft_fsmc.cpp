@@ -22,7 +22,7 @@
 
 #include "../../../inc/MarlinConfig.h"
 
-#if HAS_FSMC_TFT || ENABLED(TFT_LVGL_UI_FSMC)
+#if HAS_FSMC_TFT
 
 #include "tft_fsmc.h"
 #include <libmaple/fsmc.h>
@@ -200,6 +200,8 @@ uint32_t TFT_FSMC::GetID() {
   if (id == 0)
     id = ReadID(LCD_READ_ID);
   if ((id & 0xFFFF) == 0 || (id & 0xFFFF) == 0xFFFF)
+    id = ReadID(LCD_READ_ID4);
+  if ((id & 0xFF00) == 0 && (id & 0xFF) != 0)
     id = ReadID(LCD_READ_ID4);
   return id;
 }

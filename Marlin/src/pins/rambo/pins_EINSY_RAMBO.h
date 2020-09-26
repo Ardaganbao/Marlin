@@ -25,7 +25,7 @@
  * Einsy-Rambo pin assignments
  */
 
-#ifndef __AVR_ATmega2560__
+#if NOT_TARGET(__AVR_ATmega2560__)
   #error "Oops! Select 'Arduino Mega 2560 or Rambo' in 'Tools > Board.'"
 #endif
 
@@ -78,6 +78,13 @@
 //
 #ifndef Z_MIN_PROBE_PIN
   #define Z_MIN_PROBE_PIN                     10
+#endif
+
+//
+// Filament Runout Sensor
+//
+#ifndef FIL_RUNOUT_PIN
+  #define FIL_RUNOUT_PIN                      62
 #endif
 
 //

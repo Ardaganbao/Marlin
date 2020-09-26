@@ -25,7 +25,7 @@
  * TH3D EZBoard pin assignments
  */
 
-#ifndef MCU_LPC1769
+#if NOT_TARGET(MCU_LPC1769)
   #error "Oops! Make sure you have the LPC1769 environment selected in your IDE."
 #endif
 
@@ -89,7 +89,7 @@
   #define E0_SERIAL_RX_PIN                 P0_21
 
   // Reduce baud rate to improve software serial reliability
-  #define TMC_BAUD_RATE 19200
+  #define TMC_BAUD_RATE                    19200
 #endif
 
 //

@@ -21,7 +21,7 @@
  */
 #pragma once
 
-#if !defined(__STM32F1__) && !defined(__STM32F4__)
+#if NOT_TARGET(__STM32F1__, __STM32F4__)
   #error "Oops! Select an STM32F1/4 board in 'Tools > Board.'"
 #endif
 
@@ -36,7 +36,7 @@
 //#define I2C_EEPROM
 
 // Ignore temp readings during development.
-//#define BOGUS_TEMPERATURE_GRACE_PERIOD 2000
+//#define BOGUS_TEMPERATURE_GRACE_PERIOD    2000
 
 //
 // Steppers

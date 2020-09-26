@@ -21,7 +21,7 @@
  */
 #pragma once
 
-#ifndef TARGET_STM32F1
+#if NOT_TARGET(TARGET_STM32F1)
   #error "Oops! Select an STM32F1 board in 'Tools > Board.'"
 #endif
 
@@ -31,7 +31,7 @@
 #define DISABLE_JTAG
 
 // Ignore temp readings during development.
-//#define BOGUS_TEMPERATURE_GRACE_PERIOD 2000
+//#define BOGUS_TEMPERATURE_GRACE_PERIOD    2000
 
 #if EITHER(NO_EEPROM_SELECTED, FLASH_EEPROM_EMULATION)
   #define FLASH_EEPROM_EMULATION
@@ -117,10 +117,10 @@
    * Hardware serial communication ports.
    * If undefined software serial is used according to the pins below
    */
-  //#define X_HARDWARE_SERIAL  Serial1
-  //#define Y_HARDWARE_SERIAL  Serial1
-  //#define Z_HARDWARE_SERIAL  Serial1
-  //#define E0_HARDWARE_SERIAL Serial1
+  //#define X_HARDWARE_SERIAL  MSerial1
+  //#define Y_HARDWARE_SERIAL  MSerial1
+  //#define Z_HARDWARE_SERIAL  MSerial1
+  //#define E0_HARDWARE_SERIAL MSerial1
 
   //
   // Software serial
@@ -138,7 +138,7 @@
   #define E0_SERIAL_RX_PIN                  PD2
 
   // Reduce baud rate to improve software serial reliability
-  #define TMC_BAUD_RATE 19200
+  #define TMC_BAUD_RATE                    19200
 #endif
 
 //
@@ -158,7 +158,7 @@
 // USB connect control
 //
 #define USB_CONNECT_PIN                     PC13
-#define USB_CONNECT_INVERTING false
+#define USB_CONNECT_INVERTING              false
 
 /**
  *                 _____
@@ -260,7 +260,7 @@
    *
    */
 
-  #define CLCD_SPI_BUS 1                          // SPI1 connector
+  #define CLCD_SPI_BUS                         1  // SPI1 connector
 
   #define BEEPER_PIN                        PB6
 
@@ -288,5 +288,5 @@
   #error "SD CUSTOM_CABLE is not compatible with SKR E3 DIP."
 #endif
 
-#define ON_BOARD_SPI_DEVICE 1                     // SPI1
+#define ONBOARD_SPI_DEVICE                     1  // SPI1
 #define ONBOARD_SD_CS_PIN                   PA4   // Chip select for "System" SD card

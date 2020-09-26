@@ -151,7 +151,7 @@
    * Hardware serial communication ports.
    * If undefined software serial is used according to the pins below
    */
-  //#define X_HARDWARE_SERIAL  Serial
+  //#define X_HARDWARE_SERIAL  Serial1
   //#define X2_HARDWARE_SERIAL Serial1
   //#define Y_HARDWARE_SERIAL  Serial1
   //#define Y2_HARDWARE_SERIAL Serial1
@@ -182,7 +182,7 @@
   #define E1_SERIAL_RX_PIN                 P1_01
 
   // Reduce baud rate to improve software serial reliability
-  #define TMC_BAUD_RATE 19200
+  #define TMC_BAUD_RATE                    19200
 #endif
 
 /**

@@ -37,7 +37,7 @@
  *  number (B5) agrees with the schematic but B5 is assigned to logical pin 11.
  */
 
-#if !defined(__AVR_ATmega1280__) && !defined(__AVR_ATmega2560__)
+#if NOT_TARGET(__AVR_ATmega1280__, __AVR_ATmega2560__)
   #error "Oops! Select 'Mega 1280' or 'Mega 2560' in 'Tools > Board.'"
 #endif
 
@@ -116,7 +116,7 @@
 #define DIGIPOTS_I2C_SDA_E1                   77  // J6
 
 #ifndef DIGIPOT_I2C_ADDRESS_A
-  #define DIGIPOT_I2C_ADDRESS_A 0x2F              // unshifted slave address (5E <- 2F << 1)
+  #define DIGIPOT_I2C_ADDRESS_A             0x2F  // unshifted slave address (5E <- 2F << 1)
 #endif
 
 //
