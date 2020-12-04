@@ -107,10 +107,16 @@ extern "C" volatile uint32_t _millis;
 //
 // Utility functions
 //
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-function"
+#if GCC_VERSION <= 50000
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wunused-function"
+#endif
+
 int freeMemory();
-#pragma GCC diagnostic pop
+
+#if GCC_VERSION <= 50000
+  #pragma GCC diagnostic pop
+#endif
 
 //
 // ADC API
@@ -199,6 +205,8 @@ void set_pwm_duty(const pin_t pin, const uint16_t v, const uint16_t v_size=255, 
 // Reset source
 void HAL_clear_reset_source(void);
 uint8_t HAL_get_reset_source(void);
+
+inline void HAL_reboot() {}  // reboot the board or restart the bootloader
 
 // Add strcmp_P if missing
 #ifndef strcmp_P
