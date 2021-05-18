@@ -37,12 +37,10 @@
 
 #define BOARD_NO_NATIVE_USB
 
-// Avoid conflict with TIMER_SERVO when using the STM32 HAL
-#define TEMP_TIMER 5
-
 //
 // Release PB4 (Y_ENABLE_PIN) from JTAG NRST role
 //
+
 #define DISABLE_DEBUG
 
 //
@@ -60,11 +58,6 @@
 // Note: MKS Robin board is using SPI2 interface.
 //
 #define SPI_DEVICE                             2
-
-//
-// Servos
-//
-#define SERVO0_PIN                          PA8   // Enable BLTOUCH
 
 //
 // Limit Switches
@@ -167,7 +160,7 @@
 
   // Reduce baud rate to improve software serial reliability
   #define TMC_BAUD_RATE                    19200
-#endif // HAS_TMC_UART
+#endif // TMC2208 || TMC2209
 
 //
 // Temperature Sensors
@@ -221,6 +214,8 @@
   #define FIL_RUNOUT_PIN                    PA4
   #define FIL_RUNOUT2_PIN                   PE6
 #endif
+
+#define SERVO0_PIN                          PA8   // Enable BLTOUCH
 
 //#define LED_PIN                           PB2
 

@@ -30,14 +30,14 @@
 #include "../ftdi_eve_lib/extras/poly_ui.h"
 #include "../archim2-flash/flash_storage.h"
 
-#if ENABLED(SHOW_CUSTOM_BOOTSCREEN)
-  #if ENABLED(TOUCH_UI_PORTRAIT)
+#ifdef SHOW_CUSTOM_BOOTSCREEN
+  #ifdef TOUCH_UI_PORTRAIT
     #include "../theme/bootscreen_logo_portrait.h"
   #else
     #include "../theme/_bootscreen_landscape.h"
   #endif
 #else
-  #if ENABLED(TOUCH_UI_PORTRAIT)
+  #ifdef TOUCH_UI_PORTRAIT
     #include "../theme/marlin_bootscreen_portrait.h"
   #else
     #include "../theme/marlin_bootscreen_landscape.h"
@@ -92,7 +92,7 @@ void BootScreen::onIdle() {
 
     StatusScreen::loadBitmaps();
 
-    #if ENABLED(TOUCH_UI_LULZBOT_BIO)
+    #ifdef TOUCH_UI_LULZBOT_BIO
       GOTO_SCREEN(BioConfirmHomeXYZ);
       current_screen.forget();
       PUSH_SCREEN(StatusScreen);

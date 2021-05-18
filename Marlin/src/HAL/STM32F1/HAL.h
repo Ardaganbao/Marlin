@@ -61,11 +61,8 @@
 #endif
 
 #ifdef SERIAL_USB
-  typedef ForwardSerial0Type< USBSerial > DefaultSerial;
-  extern DefaultSerial MSerial;
-
   #if !HAS_SD_HOST_DRIVE
-    #define UsbSerial MSerial
+    #define UsbSerial Serial
   #else
     #define UsbSerial MarlinCompositeSerial
   #endif
@@ -102,18 +99,6 @@
   #endif
 #endif
 
-#ifdef MMU2_SERIAL_PORT
-  #if MMU2_SERIAL_PORT == -1
-    #define MMU2_SERIAL UsbSerial
-  #elif WITHIN(MMU2_SERIAL_PORT, 1, NUM_UARTS)
-    #define MMU2_SERIAL MSERIAL(MMU2_SERIAL_PORT)
-  #elif NUM_UARTS == 5
-    #error "MMU2_SERIAL_PORT must be -1 or from 1 to 5. Please update your configuration."
-  #else
-    #error "MMU2_SERIAL_PORT must be -1 or from 1 to 3. Please update your configuration."
-  #endif
-#endif
-
 #ifdef LCD_SERIAL_PORT
   #if LCD_SERIAL_PORT == -1
     #define LCD_SERIAL UsbSerial
@@ -123,9 +108,6 @@
     #error "LCD_SERIAL_PORT must be -1 or from 1 to 5. Please update your configuration."
   #else
     #error "LCD_SERIAL_PORT must be -1 or from 1 to 3. Please update your configuration."
-  #endif
-  #if HAS_DGUS_LCD
-    #define SERIAL_GET_TX_BUFFER_FREE() LCD_SERIAL.availableForWrite()
   #endif
 #endif
 
@@ -154,6 +136,14 @@ void HAL_idletask();
 
 // On AVR this is in math.h?
 #define square(x) ((x)*(x))
+
+#ifndef strncpy_P
+  #define strncpy_P(dest, src, num) strncpy((dest), (src), (num))
+#endif
+
+// Fix bug in pgm_read_ptr
+#undef pgm_read_ptr
+#define pgm_read_ptr(addr) (*(addr))
 
 #define RST_POWER_ON   1
 #define RST_EXTERNAL   2
@@ -199,8 +189,10 @@ inline void HAL_reboot() {}  // reboot the board or restart the bootloader
 
 void _delay_ms(const int delay);
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-function"
+#if GCC_VERSION <= 50000
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wunused-function"
+#endif
 
 /*
 extern "C" {
@@ -215,7 +207,9 @@ static inline int freeMemory() {
   return &top - _sbrk(0);
 }
 
-#pragma GCC diagnostic pop
+#if GCC_VERSION <= 50000
+  #pragma GCC diagnostic pop
+#endif
 
 //
 // ADC

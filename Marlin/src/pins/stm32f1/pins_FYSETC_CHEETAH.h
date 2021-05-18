@@ -80,26 +80,10 @@
 #define E0_DIR_PIN                          PC14
 #define E0_ENABLE_PIN                       PC13
 
-#if HAS_TMC_UART
-  #define X_HARDWARE_SERIAL  MSerial2
-  #define Y_HARDWARE_SERIAL  MSerial2
-  #define Z_HARDWARE_SERIAL  MSerial2
-  #define E0_HARDWARE_SERIAL MSerial2
-
-  // Default TMC slave addresses
-  #ifndef X_SLAVE_ADDRESS
-    #define X_SLAVE_ADDRESS  0
-  #endif
-  #ifndef Y_SLAVE_ADDRESS
-    #define Y_SLAVE_ADDRESS  1
-  #endif
-  #ifndef Z_SLAVE_ADDRESS
-    #define Z_SLAVE_ADDRESS  2
-  #endif
-  #ifndef E0_SLAVE_ADDRESS
-    #define E0_SLAVE_ADDRESS 3
-  #endif
-#endif
+#define X_HARDWARE_SERIAL  MSerial2
+#define Y_HARDWARE_SERIAL  MSerial2
+#define Z_HARDWARE_SERIAL  MSerial2
+#define E0_HARDWARE_SERIAL MSerial2
 
 //
 // Heaters / Fans

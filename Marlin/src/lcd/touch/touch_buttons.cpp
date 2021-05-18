@@ -31,9 +31,7 @@ XPT2046 touchIO;
   #include "../tft_io/touch_calibration.h"
 #endif
 
-#include "../buttons.h" // For EN_C bit mask
-#include "../marlinui.h" // For ui.refresh
-#include "../tft_io/tft_io.h"
+#include "../marlinui.h" // For EN_C bit mask
 
 #define DOGM_AREA_LEFT   TFT_PIXEL_OFFSET_X
 #define DOGM_AREA_TOP    TFT_PIXEL_OFFSET_Y
@@ -51,8 +49,7 @@ uint8_t TouchButtons::read_buttons() {
   #ifdef HAS_WIRED_LCD
     int16_t x, y;
 
-    const bool is_touched = (TERN(TOUCH_SCREEN_CALIBRATION, touch_calibration.calibration.orientation, TOUCH_ORIENTATION) == TOUCH_PORTRAIT ? touchIO.getRawPoint(&y, &x) : touchIO.getRawPoint(&x, &y));
-    if (!is_touched) return 0;
+    if (!touchIO.getRawPoint(&x, &y)) return 0;
 
     #if ENABLED(TOUCH_SCREEN_CALIBRATION)
       const calibrationState state = touch_calibration.get_calibration_state();
@@ -66,6 +63,7 @@ uint8_t TouchButtons::read_buttons() {
       x = uint16_t((uint32_t(x) * TOUCH_CALIBRATION_X) >> 16) + TOUCH_OFFSET_X;
       y = uint16_t((uint32_t(y) * TOUCH_CALIBRATION_Y) >> 16) + TOUCH_OFFSET_Y;
     #endif
+
 
     // Touch within the button area simulates an encoder button
     if (y > BUTTON_AREA_TOP && y < BUTTON_AREA_BOT)

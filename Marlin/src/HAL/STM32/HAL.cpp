@@ -28,10 +28,6 @@
 #include "../../inc/MarlinConfig.h"
 #include "../shared/Delay.h"
 
-#ifdef USBCON
-  DefaultSerial MSerial(false, SerialUSB);
-#endif
-
 #if ENABLED(SRAM_EEPROM_EMULATION)
   #if STM32F7xx
     #include <stm32f7xx_ll_pwr.h>
@@ -40,11 +36,6 @@
   #else
     #error "SRAM_EEPROM_EMULATION is currently only supported for STM32F4xx and STM32F7xx"
   #endif
-#endif
-
-#if HAS_SD_HOST_DRIVE
-  #include "msc_sd.h"
-  #include "usbd_cdc_if.h"
 #endif
 
 // ------------------------
@@ -92,19 +83,6 @@ void HAL_init() {
 
   #if ENABLED(EMERGENCY_PARSER) && USBD_USE_CDC
     USB_Hook_init();
-  #endif
-
-  #if HAS_SD_HOST_DRIVE
-    MSC_SD_init();                         // Enable USB SD card access
-  #endif
-}
-
-// HAL idle task
-void HAL_idletask() {
-  #if HAS_SHARED_MEDIA
-    // Stm32duino currently doesn't have a "loop/idle" method
-    CDC_resume_receive();
-    CDC_continue_transmit();
   #endif
 }
 

@@ -57,17 +57,11 @@
 #include "../core/debug_out.h"
 #include "../libs/hex_print.h"
 
-// extern
-
-PGMSTR(M23_STR, "M23 %s");
-PGMSTR(M24_STR, "M24");
-
 // public:
 
 card_flags_t CardReader::flag;
 char CardReader::filename[FILENAME_LENGTH], CardReader::longFilename[LONG_FILENAME_LENGTH];
-
-IF_DISABLED(NO_SD_AUTOSTART, uint8_t CardReader::autofile_index); // = 0
+int8_t CardReader::autostart_index;
 
 #if BOTH(HAS_MULTI_SERIAL, BINARY_FILE_TRANSFER)
   int8_t CardReader::transfer_port_index;
@@ -141,16 +135,16 @@ CardReader::CardReader() {
       //sort_reverse = false;
     #endif
   #endif
-
   flag.sdprinting = flag.mounted = flag.saving = flag.logging = false;
   filesize = sdpos = 0;
 
   TERN_(HAS_MEDIA_SUBCALLS, file_subcall_ctr = 0);
 
-  IF_DISABLED(NO_SD_AUTOSTART, autofile_cancel());
-
   workDirDepth = 0;
   ZERO(workDirParents);
+
+  // Disable autostart until card is initialized
+  autostart_index = -1;
 
   #if ENABLED(SDSUPPORT) && PIN_EXISTS(SD_DETECT)
     SET_INPUT_PULLUP(SD_DETECT_PIN);
@@ -270,9 +264,10 @@ void CardReader::printListing(SdFile parent, const char * const prepend/*=nullpt
       // Get a new directory object using the full path
       // and dive recursively into it.
       SdFile child;
-      if (!child.open(&parent, dosFilename, O_READ))
-        SERIAL_ECHO_MSG(STR_SD_CANT_OPEN_SUBDIR, dosFilename);
-
+      if (!child.open(&parent, dosFilename, O_READ)) {
+        SERIAL_ECHO_START();
+        SERIAL_ECHOLNPAIR(STR_SD_CANT_OPEN_SUBDIR, dosFilename);
+      }
       printListing(child, path);
       // close() is done automatically by destructor of SdFile
     }
@@ -368,7 +363,7 @@ void CardReader::printFilename() {
     #if ENABLED(LONG_FILENAME_HOST_SUPPORT)
       selectFileByName(dosFilename);
       if (longFilename[0]) {
-        SERIAL_CHAR(' ');
+        SERIAL_ECHO(' ');
         SERIAL_ECHO(longFilename);
       }
     #endif
@@ -383,9 +378,9 @@ void CardReader::mount() {
   flag.mounted = false;
   if (root.isOpen()) root.close();
 
-  if (!sd2card.init(SD_SPI_SPEED, SDSS)
+  if (!sd2card.init(SPI_SPEED, SDSS)
     #if defined(LCD_SDSS) && (LCD_SDSS != SDSS)
-      && !sd2card.init(SD_SPI_SPEED, LCD_SDSS)
+      && !sd2card.init(SPI_SPEED, LCD_SDSS)
     #endif
   ) SERIAL_ECHO_MSG(STR_SD_INIT_FAIL);
   else if (!volume.init(&sd2card))
@@ -447,14 +442,12 @@ void CardReader::manage_media() {
 
     if (stat) {
       TERN_(SDCARD_EEPROM_EMULATION, settings.first_load());
-      if (old_stat == 2) {            // First mount?
+      if (old_stat == 2)              // First mount?
         DEBUG_ECHOLNPGM("First mount.");
-        #if ENABLED(POWER_LOSS_RECOVERY)
-          recovery.check();           // Check for PLR file. (If not there then call autofile_begin)
-        #elif DISABLED(NO_SD_AUTOSTART)
-          autofile_begin();           // Look for auto0.g on the next loop
-        #endif
-      }
+        TERN(POWER_LOSS_RECOVERY,
+          recovery.check(),           // Check for PLR file. (If not there it will beginautostart)
+          beginautostart()            // Look for auto0.g on the next loop
+        );
     }
   }
   else
@@ -484,11 +477,12 @@ void CardReader::release() {
  * Enqueues M23 and M24 commands to initiate a media print.
  */
 void CardReader::openAndPrintFile(const char *name) {
-  char cmd[4 + strlen(name) + 1 + 3 + 1]; // Room for "M23 ", filename, "\n", "M24", and null
+  char cmd[4 + strlen(name) + 1]; // Room for "M23 ", filename, and null
+  extern const char M23_STR[];
   sprintf_P(cmd, M23_STR, name);
   for (char *c = &cmd[4]; *c; c++) *c = tolower(*c);
-  strcat_P(cmd, PSTR("\nM24"));
-  queue.inject(cmd);
+  queue.enqueue_one_now(cmd);
+  queue.enqueue_now_P(M24_STR);
 }
 
 /**
@@ -517,7 +511,7 @@ void CardReader::endFilePrint(TERN_(SD_RESORT, const bool re_sort/*=false*/)) {
 
 void CardReader::openLogFile(char * const path) {
   flag.logging = DISABLED(SDCARD_READONLY);
-  IF_DISABLED(SDCARD_READONLY, openFileWrite(path));
+  TERN(SDCARD_READONLY,,openFileWrite(path));
 }
 
 //
@@ -549,11 +543,12 @@ void openFailed(const char * const fname) {
 
 void announceOpen(const uint8_t doing, const char * const path) {
   if (doing) {
-    PORT_REDIRECT(SERIAL_ALL);
+    PORT_REDIRECT(SERIAL_BOTH);
     SERIAL_ECHO_START();
     SERIAL_ECHOPGM("Now ");
     serialprintPGM(doing == 1 ? PSTR("doing") : PSTR("fresh"));
     SERIAL_ECHOLNPAIR(" file: ", path);
+    PORT_RESTORE();
   }
 }
 
@@ -593,7 +588,8 @@ void CardReader::openFileRead(char * const path, const uint8_t subcall_type/*=0*
         filespos[file_subcall_ctr] = sdpos;
 
         // For sub-procedures say 'SUBROUTINE CALL target: "..." parent: "..." pos12345'
-        SERIAL_ECHO_MSG("SUBROUTINE CALL target:\"", path, "\" parent:\"", proc_filenames[file_subcall_ctr], "\" pos", sdpos);
+        SERIAL_ECHO_START();
+        SERIAL_ECHOLNPAIR("SUBROUTINE CALL target:\"", path, "\" parent:\"", proc_filenames[file_subcall_ctr], "\" pos", sdpos);
         file_subcall_ctr++;
         break;
 
@@ -614,11 +610,10 @@ void CardReader::openFileRead(char * const path, const uint8_t subcall_type/*=0*
     filesize = file.fileSize();
     sdpos = 0;
 
-    { // Don't remove this block, as the PORT_REDIRECT is a RAII
-      PORT_REDIRECT(SERIAL_ALL);
-      SERIAL_ECHOLNPAIR(STR_SD_FILE_OPENED, fname, STR_SD_SIZE, filesize);
-      SERIAL_ECHOLNPGM(STR_SD_FILE_SELECTED);
-    }
+    PORT_REDIRECT(SERIAL_BOTH);
+    SERIAL_ECHOLNPAIR(STR_SD_FILE_OPENED, fname, STR_SD_SIZE, filesize);
+    SERIAL_ECHOLNPGM(STR_SD_FILE_SELECTED);
+    PORT_RESTORE();
 
     selectFileByName(fname);
     ui.set_status(longFilename[0] ? longFilename : fname);
@@ -667,24 +662,14 @@ void CardReader::openFileWrite(char * const path) {
 //
 bool CardReader::fileExists(const char * const path) {
   if (!isMounted()) return false;
-
-  DEBUG_ECHOLNPAIR("fileExists: ", path);
-
-  // Dive to the file's directory and get the base name
   SdFile *diveDir = nullptr;
   const char * const fname = diveToFile(false, diveDir, path);
-  if (!fname) return false;
-
-  // Get the longname of the checked file
-  //diveDir->rewind();
-  //selectByName(*diveDir, fname);
-  //diveDir->close();
-
-  // Try to open the file and return the result
-  SdFile tmpFile;
-  const bool success = tmpFile.open(diveDir, fname, O_READ);
-  if (success) tmpFile.close();
-  return success;
+  if (fname) {
+    diveDir->rewind();
+    selectByName(*diveDir, fname);
+    //diveDir->close();
+  }
+  return !!fname;
 }
 
 //
@@ -740,48 +725,42 @@ void CardReader::write_command(char * const buf) {
   if (file.writeError) SERIAL_ERROR_MSG(STR_SD_ERR_WRITE_TO_FILE);
 }
 
-#if DISABLED(NO_SD_AUTOSTART)
-  /**
-   * Run all the auto#.g files. Called:
-   * - On boot after successful card init.
-   * - From the LCD command to Run Auto Files
-   */
-  void CardReader::autofile_begin() {
-    autofile_index = 1;
-    (void)autofile_check();
-  }
+//
+// Run the next autostart file. Called:
+// - On boot after successful card init
+// - After finishing the previous autostart file
+// - From the LCD command to run the autostart file
+//
 
-  /**
-   * Run the next auto#.g file. Called:
-   *   - On boot after successful card init
-   *   - After finishing the previous auto#.g file
-   *   - From the LCD command to begin the auto#.g files
-   *
-   * Return 'true' if an auto file was started
-   */
-  bool CardReader::autofile_check() {
-    if (!autofile_index) return false;
+void CardReader::checkautostart() {
 
-    if (!isMounted())
-      mount();
-    else if (ENABLED(SDCARD_EEPROM_EMULATION))
-      settings.first_load();
+  if (autostart_index < 0 || flag.sdprinting) return;
 
-    // Don't run auto#.g when a PLR file exists
-    if (isMounted() && TERN1(POWER_LOSS_RECOVERY, !recovery.valid())) {
-      char autoname[10];
-      sprintf_P(autoname, PSTR("/auto%c.g"), '0' + autofile_index - 1);
-      if (fileExists(autoname)) {
-        cdroot();
+  if (!isMounted()) mount();
+  TERN_(SDCARD_EEPROM_EMULATION, else settings.first_load());
+
+  // Don't run auto#.g when a PLR file exists
+  if (isMounted() && TERN1(POWER_LOSS_RECOVERY, !recovery.valid())) {
+    char autoname[8];
+    sprintf_P(autoname, PSTR("auto%c.g"), autostart_index + '0');
+    dir_t p;
+    root.rewind();
+    while (root.readDir(&p, nullptr) > 0) {
+      for (int8_t i = (int8_t)strlen((char*)p.name); i--;) p.name[i] = tolower(p.name[i]);
+      if (p.name[9] != '~' && strncmp((char*)p.name, autoname, 5) == 0) {
         openAndPrintFile(autoname);
-        autofile_index++;
-        return true;
+        autostart_index++;
+        return;
       }
     }
-    autofile_cancel();
-    return false;
   }
-#endif
+  autostart_index = -1;
+}
+
+void CardReader::beginautostart() {
+  autostart_index = 0;
+  cdroot();
+}
 
 void CardReader::closefile(const bool store_location/*=false*/) {
   file.sync();
@@ -939,8 +918,10 @@ void CardReader::cd(const char * relpath) {
       workDirParents[workDirDepth++] = workDir;
     TERN_(SDCARD_SORT_ALPHA, presort());
   }
-  else
-    SERIAL_ECHO_MSG(STR_SD_CANT_ENTER_SUBDIR, relpath);
+  else {
+    SERIAL_ECHO_START();
+    SERIAL_ECHOLNPAIR(STR_SD_CANT_ENTER_SUBDIR, relpath);
+  }
 }
 
 int8_t CardReader::cdup() {
@@ -1222,8 +1203,21 @@ void CardReader::fileHasFinished() {
 }
 
 #if ENABLED(AUTO_REPORT_SD_STATUS)
-  AutoReporter<CardReader::AutoReportSD> CardReader::auto_reporter;
-#endif
+  uint8_t CardReader::auto_report_sd_interval = 0;
+  millis_t CardReader::next_sd_report_ms;
+  #if HAS_MULTI_SERIAL
+    int8_t CardReader::auto_report_port;
+  #endif
+
+  void CardReader::auto_report_sd_status() {
+    millis_t current_ms = millis();
+    if (auto_report_sd_interval && ELAPSED(current_ms, next_sd_report_ms)) {
+      next_sd_report_ms = current_ms + 1000UL * auto_report_sd_interval;
+      PORT_REDIRECT(auto_report_port);
+      report_status();
+    }
+  }
+#endif // AUTO_REPORT_SD_STATUS
 
 #if ENABLED(POWER_LOSS_RECOVERY)
 
@@ -1237,7 +1231,7 @@ void CardReader::fileHasFinished() {
     if (!isMounted()) return;
     if (recovery.file.isOpen()) return;
     if (!recovery.file.open(&root, recovery.filename, read ? O_READ : O_CREAT | O_WRITE | O_TRUNC | O_SYNC))
-      openFailed(recovery.filename);
+      SERIAL_ECHOLNPAIR(STR_SD_OPEN_FILE_FAIL, recovery.filename, ".");
     else if (!read)
       echo_write_to_file(recovery.filename);
   }

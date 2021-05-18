@@ -75,20 +75,8 @@
 #define TOUCH_LANDSCAPE         1
 #define TOUCH_PORTRAIT          2
 
-#ifndef TOUCH_CALIBRATION_X
-  #define TOUCH_CALIBRATION_X   0
-#endif
-#ifndef TOUCH_CALIBRATION_Y
-  #define TOUCH_CALIBRATION_Y   0
-#endif
-#ifndef TOUCH_OFFSET_X
-  #define TOUCH_OFFSET_X        0
-#endif
-#ifndef TOUCH_OFFSET_Y
-  #define TOUCH_OFFSET_Y        0
-#endif
 #ifndef TOUCH_ORIENTATION
-  #define TOUCH_ORIENTATION     TOUCH_LANDSCAPE
+  #define TOUCH_ORIENTATION    TOUCH_LANDSCAPE
 #endif
 
 #define SSD1963         0x5761
@@ -121,7 +109,7 @@ public:
   static void write_esc_sequence(const uint16_t *Sequence);
 
   // Deletaged methods
-  inline static void Init() { io.Init(); io.Abort(); };
+  inline static void Init() { io.Init(); };
   inline static bool isBusy() { return io.isBusy(); };
   inline static void Abort() { io.Abort(); };
   inline static uint32_t GetID() { return io.GetID(); };

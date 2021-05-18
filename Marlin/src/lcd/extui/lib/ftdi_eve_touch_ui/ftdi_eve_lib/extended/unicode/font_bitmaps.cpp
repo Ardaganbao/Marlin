@@ -21,18 +21,16 @@
 
 #include "../ftdi_extended.h"
 
-#if ENABLED(FTDI_EXTENDED)
+#ifdef FTDI_EXTENDED
 
 namespace FTDI {
 
-  uint32_t write_rle_data(uint32_t addr, const uint8_t *data, size_t n) {
+  void write_rle_data(uint16_t addr, const uint8_t *data, size_t n) {
     for (; n >= 2; n -= 2) {
       uint8_t count = pgm_read_byte(data++);
       uint8_t value = pgm_read_byte(data++);
-      CLCD::mem_write_fill(addr, value, count);
-      addr += count;
+      while (count--) CLCD::mem_write_8(addr++, value);
     }
-    return addr;
   }
 
   void set_font_bitmap(CommandProcessor& cmd, CLCD::FontMetrics &fm, uint8_t handle) {
